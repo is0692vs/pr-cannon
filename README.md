@@ -10,9 +10,10 @@ A CLI tool that automatically creates Pull Requests by sending files to any GitH
 ## ✨ Features
 
 - 🚀 **Fully Automated**: File reading → Branch creation → Commit → PR creation
-- 📁 **Folder Support**: Send entire directories with multiple files
+- 📁 **Folder Support**: Send entire directories with multiple files (Issue #7)
 - 🗂️ **Directory Structure Preservation**: Maintains folder hierarchy in target repository
 - 📄 **Flexible Path Control**: Custom destination paths with `--path` option
+- 🧪 **Test Command**: `prca test` for quick testing from current directory
 - 🔒 **Secure**: Uses GitHub Personal Access Token
 - 🎯 **Simple CLI**: Intuitive command-line interface
 - 📦 **Multiple File Types**: Supports Markdown, JavaScript, JSON, text files, etc.
@@ -113,8 +114,28 @@ pr-cannon fire guide.md is0692vs/docs --path docs/guides/setup.md
 pr-cannon fire ./examples/sample.txt is0692vs/showcase
 ```
 
+### Test Mode
+
+Create a test PR from the current directory with automatic timestamp-based paths:
+
+```bash
+pr-cannon test <repo>
+```
+
+Or use the short alias:
+
+```bash
+prca test is0692vs/test-pr-cannon
+```
+
+This command:
+- 📍 Collects all files from the current directory
+- ⏰ Creates an automatic destination path with timestamp
+- 🧪 Perfect for testing the folder sending feature
+
 ### Command Reference
 
+**Fire Command:**
 ```
 pr-cannon fire [options] <file-or-folder> <repo>
 
@@ -127,18 +148,39 @@ Options:
   -h, --help         Display help for command
 ```
 
+**Test Command:**
+```
+pr-cannon test [options] <repo>
+
+Arguments:
+  repo               Repository in owner/repo format
+
+Options:
+  -p, --path <path>  Custom destination path (optional)
+  -h, --help         Display help for command
+```
+
 ## 📖 How It Works
 
-1. **Reads** your local file or files in folder and encodes them
-2. **Detects** if input is a file or directory
-3. **Recursively collects** all files from directory (if applicable) while:
+### File Sending
+1. **Reads** your local file and encodes it
+2. **Connects** to GitHub API using your token
+3. **Creates** a new branch with unique timestamp
+4. **Commits** the file to the new branch
+5. **Opens** a Pull Request automatically
+6. **Displays** PR URL in your terminal
+
+### Folder Sending (Issue #7)
+1. **Detects** if input is a file or directory
+2. **Recursively collects** all files from directory while:
    - Excluding `.git`, `node_modules`, `.DS_Store`, and hidden files
    - Preserving directory structure with relative paths
+3. **Reads** all files and encodes them
 4. **Connects** to GitHub API using your token
 5. **Creates** a new branch with unique timestamp
-6. **Commits** all files to the new branch in a single commit
+6. **Commits** all files in a single commit (preserves structure)
 7. **Opens** a Pull Request automatically
-8. **Displays** PR URL in your terminal
+8. **Displays** PR URL and summary in your terminal
 
 ## 🎯 Use Cases
 
@@ -362,6 +404,17 @@ pr-cannon fire config.js is0692vs/myproject --path src/config.js
 ```bash
 pr-cannon fire guide.md is0692vs/docs --path docs/guides/setup.md
 ```
+
+**テストモード（現在のディレクトリから PR を作成）:**
+
+```bash
+prca test is0692vs/test-pr-cannon
+```
+
+このコマンドで：
+- 📍 カレントディレクトリのすべてのファイルを収集
+- ⏰ タイムスタンプベースの自動送信先パスを作成
+- 🧪 フォルダ送信機能のテストに最適
 
 ### 主な機能
 
