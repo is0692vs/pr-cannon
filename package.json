@@ -1,7 +1,7 @@
 {
   "name": "pr-cannon",
   "version": "0.1.0",
-  "description": "\udd25 Fire your files to any repository as a Pull Request",
+  "description": "🔥 Fire your files to any repository as a Pull Request",
   "keywords": [
     "cli",
     "github",
@@ -25,7 +25,7 @@
     "url": "https://github.com/is0692vs/pr-cannon/issues"
   },
   "homepage": "https://github.com/is0692vs/pr-cannon#readme",
-  "main": "dist/index.js",
+  "main": "dist/index.mjs",
   "bin": {
     "pr-cannon": "dist/index.mjs"
   },
