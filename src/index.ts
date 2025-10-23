@@ -9,6 +9,7 @@ import {
   getRepoInfo,
   GitHubError,
   createBranchWithFile,
+  createPullRequest,
 } from "./utils/github.js";
 import { basename } from "path";
 
@@ -67,11 +68,21 @@ program
         decodedContent,
         destinationPath
       );
-
       console.log(`✅ Branch created: ${branchName}`);
       console.log(`✅ Commit created: ${commitSha.substring(0, 7)}`);
 
-      console.log("\n⚠️  PR creation coming soon...");
+      // Pull Request を作成
+      console.log("\n🚀 Creating pull request...");
+      const { prNumber, prUrl } = await createPullRequest(
+        repo,
+        branchName,
+        file,
+        destinationPath
+      );
+
+      console.log(`✅ Pull request created: #${prNumber}`);
+      console.log(`🔗 PR URL: ${prUrl}`);
+      console.log("\n🎉 Done! Your file has been fired! 💣");
     } catch (error) {
       if (error instanceof FileReadError) {
         console.error(`\n❌ File Error: ${error.message}`);
