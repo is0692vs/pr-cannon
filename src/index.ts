@@ -1,17 +1,21 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { readFileSync } from "fs";
-import { join, dirname } from "path";
+import { readFileSync, statSync } from "fs";
+import { join, dirname, basename } from "path";
 import { fileURLToPath } from "url";
-import { readFileAsBase64, FileReadError } from "./utils/fileReader.js";
+import {
+  readFileAsBase64,
+  collectFilesRecursively,
+  readMultipleFiles,
+  FileReadError,
+} from "./utils/fileReader.js";
 import {
   getRepoInfo,
   GitHubError,
   createBranchWithFile,
   createPullRequest,
 } from "./utils/github.js";
-import { basename } from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -29,44 +33,91 @@ program
   .version(packageJson.version);
 program
   .command("fire")
-  .description("Fire a file to a repository as a PR")
-  .argument("<file>", "File path to send")
+  .description("Fire a file or folder to a repository as a PR")
+  .argument("<file>", "File or folder path to send")
   .argument("<repo>", "Repository (owner/repo format)")
   .option("-p, --path <path>", "Destination path in the repository")
-  .action(async (file, repo, options) => {
+  .action(async (fileOrFolder, repo, options) => {
     try {
       console.log(`🎯 Targeting: ${repo}`);
-      console.log(`📄 File: ${file}`);
+      console.log(`📄 Source: ${fileOrFolder}`);
 
-      // ファイルを読み込み
-      const fileContent = await readFileAsBase64(file);
-      console.log(`✅ File loaded: ${fileContent.path}`);
-      console.log(
-        `📦 Content size: ${fileContent.content.length} bytes (base64)`
-      );
+      // ファイル/フォルダの存在確認とタイプ判定
+      const stat = statSync(fileOrFolder);
+      const isDirectory = stat.isDirectory();
+
+      let fileContentsArray: Array<{ path: string; content: string }> = [];
+      let sourceName: string;
+      let filePaths: string[] = [];
+
+      if (isDirectory) {
+        // ✅ フォルダ処理
+        console.log(`📁 Directory detected`);
+        sourceName = basename(fileOrFolder);
+
+        // ディレクトリ内のファイルを再帰的に収集
+        const absoluteFilePaths = await collectFilesRecursively(fileOrFolder);
+        console.log(`✅ Found ${absoluteFilePaths.length} files`);
+
+        if (absoluteFilePaths.length === 0) {
+          throw new FileReadError(
+            "No files found in directory (or all excluded)",
+            "NO_FILES"
+          );
+        }
+
+        // 複数ファイルを読み込み（相対パスを保持）
+        fileContentsArray = await readMultipleFiles(
+          absoluteFilePaths,
+          fileOrFolder
+        );
+        filePaths = fileContentsArray.map((f) => f.path);
+
+        // 送信先パスを決定
+        let destinationBase = options.path || sourceName;
+        fileContentsArray = fileContentsArray.map((f) => ({
+          path: join(destinationBase, f.path),
+          content: f.content,
+        }));
+      } else {
+        // ✅ ファイル処理（既存ロジック）
+        const fileContent = await readFileAsBase64(fileOrFolder);
+        console.log(`✅ File loaded: ${fileContent.path}`);
+        console.log(
+          `📦 Content size: ${fileContent.content.length} bytes (base64)`
+        );
+
+        // Base64 をデコード
+        const decodedContent = Buffer.from(
+          fileContent.content,
+          "base64"
+        ).toString("utf-8");
+
+        // 送信先パスを決定
+        const destinationPath = options.path || basename(fileOrFolder);
+        fileContentsArray = [
+          {
+            path: destinationPath,
+            content: decodedContent,
+          },
+        ];
+        filePaths = [destinationPath];
+        sourceName = basename(fileOrFolder);
+      }
 
       // GitHub API連携
       console.log("\n🔗 Connecting to GitHub...");
       const repoInfo = await getRepoInfo(repo);
       console.log(`✅ Repository: ${repoInfo.fullName}`);
       console.log(`🌿 Default branch: ${repoInfo.defaultBranch}`);
+      console.log(`� Files to add: ${fileContentsArray.length}`);
 
-      // 送信先パスを決定
-      const destinationPath = options.path || basename(file);
-      console.log(`📍 Destination: ${destinationPath}`);
-
-      // ファイルをBase64デコードしてコミット
-      const decodedContent = Buffer.from(
-        fileContent.content,
-        "base64"
-      ).toString("utf-8");
-
-      console.log("\n🌿 Creating branch and committing file...");
+      // ファイルをコミット
+      console.log("\n🌿 Creating branch and committing...");
       const { branchName, commitSha } = await createBranchWithFile(
         repo,
-        file,
-        decodedContent,
-        destinationPath
+        fileOrFolder,
+        fileContentsArray
       );
       console.log(`✅ Branch created: ${branchName}`);
       console.log(`✅ Commit created: ${commitSha.substring(0, 7)}`);
@@ -76,8 +127,8 @@ program
       const { prNumber, prUrl } = await createPullRequest(
         repo,
         branchName,
-        file,
-        destinationPath
+        sourceName,
+        filePaths
       );
 
       console.log(`✅ Pull request created: #${prNumber}`);
@@ -93,6 +144,95 @@ program
         process.exit(1);
       }
       throw error;
+    }
+  });
+
+program
+  .command("test")
+  .description("Create a test PR from current directory")
+  .argument("<repo>", "Repository (owner/repo format)")
+  .option("-p, --path <path>", "Destination path in the repository")
+  .action(async (repo, options) => {
+    try {
+      const cwd = process.cwd();
+      console.log(`🧪 Test PR Creation Mode`);
+      console.log(`📍 Current directory: ${cwd}`);
+      console.log(`🎯 Target repository: ${repo}`);
+
+      // カレントディレクトリの状態を確認
+      const stat = statSync(cwd);
+      if (!stat.isDirectory()) {
+        throw new FileReadError("Current working directory is not valid", cwd);
+      }
+
+      console.log(`\n📊 Analyzing current directory...`);
+
+      // ディレクトリ内のファイルを再帰的に収集
+      const absoluteFilePaths = await collectFilesRecursively(cwd);
+      console.log(`✅ Found ${absoluteFilePaths.length} files to test`);
+
+      if (absoluteFilePaths.length === 0) {
+        throw new FileReadError(
+          "No files found in current directory (or all excluded)",
+          "NO_FILES"
+        );
+      }
+
+      // 複数ファイルを読み込み
+      let fileContentsArray = await readMultipleFiles(absoluteFilePaths, cwd);
+
+      const dirName = basename(cwd);
+      console.log(`📁 Directory name: ${dirName}`);
+
+      // 送信先パスを決定
+      let destinationBase = options.path || `test-${dirName}-${Date.now()}`;
+      fileContentsArray = fileContentsArray.map((f) => ({
+        path: join(destinationBase, f.path),
+        content: f.content,
+      }));
+
+      // GitHub API連携
+      console.log(`\n🔗 Connecting to GitHub...`);
+      const repoInfo = await getRepoInfo(repo);
+      console.log(`✅ Repository: ${repoInfo.fullName}`);
+
+      // ファイルをコミット
+      console.log(`\n🌿 Creating test branch...`);
+      const { branchName, commitSha } = await createBranchWithFile(
+        repo,
+        cwd,
+        fileContentsArray
+      );
+      console.log(`✅ Branch created: ${branchName}`);
+      console.log(`✅ Commit created: ${commitSha.substring(0, 7)}`);
+
+      // Pull Request を作成
+      console.log(`\n🚀 Creating test PR...`);
+      const filePaths = fileContentsArray.map((f) => f.path);
+      const { prNumber, prUrl } = await createPullRequest(
+        repo,
+        branchName,
+        `test: ${dirName}`,
+        filePaths
+      );
+
+      console.log(`✅ Test PR created: #${prNumber}`);
+      console.log(`🔗 PR URL: ${prUrl}`);
+      console.log(`\n📝 Test Info:`);
+      console.log(`   Files: ${absoluteFilePaths.length}`);
+      console.log(`   Destination: ${destinationBase}`);
+      console.log(`\n🎉 Test PR ready for validation! 🧪`);
+    } catch (error) {
+      if (error instanceof FileReadError) {
+        console.error(`\n❌ File Error: ${error.message}`);
+        process.exit(1);
+      }
+      if (error instanceof GitHubError) {
+        console.error(`\n❌ GitHub Error: ${error.message}`);
+        process.exit(1);
+      }
+      console.error(`\n❌ Unexpected error:`, error);
+      process.exit(1);
     }
   });
 

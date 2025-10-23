@@ -1,0 +1,10 @@
+{
+  "name": "test-project",
+  "version": "1.0.0",
+  "description": "Test configuration file",
+  "type": "module",
+  "exports": {
+    "./index": "./src/index.js",
+    "./utils": "./src/utils.js"
+  }
+}
