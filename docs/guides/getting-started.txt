@@ -1,0 +1,4 @@
+Hello World from pr-cannon!
+
+This is a plain text file used for testing the pr-cannon CLI tool.
+It demonstrates file upload capabilities with custom paths.
