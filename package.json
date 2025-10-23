@@ -1,28 +1,43 @@
 {
   "name": "pr-cannon",
   "version": "0.1.0",
-  "description": "💣 Fire your files to any repository as a Pull Request",
-  "main": "dist/index.js",
-  "bin": {
-    "pr-cannon": "dist/index.js"
-  },
-  "scripts": {
-    "build": "tsup src/index.ts --format esm --dts",
-    "dev": "tsup src/index.ts --format esm --watch",
-    "start": "node dist/index.js"
-  },
+  "description": "\udd25 Fire your files to any repository as a Pull Request",
   "keywords": [
-    "github",
-    "pr",
-    "pull-request",
     "cli",
-    "automation"
+    "github",
+    "pull-request",
+    "automation",
+    "git",
+    "pr",
+    "file-transfer"
   ],
-  "author": "Hiroki Mukai (github.com/is0692vs)",
+  "author": {
+    "name": "Hiroki Mukai",
+    "email": "is0692vs@ed.ritsumei.ac.jp",
+    "url": "https://github.com/is0692vs"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/is0692vs/pr-cannon"
+    "url": "https://github.com/is0692vs/pr-cannon.git"
+  },
+  "bugs": {
+    "url": "https://github.com/is0692vs/pr-cannon/issues"
+  },
+  "homepage": "https://github.com/is0692vs/pr-cannon#readme",
+  "main": "dist/index.js",
+  "bin": {
+    "pr-cannon": "dist/index.mjs"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "dev": "tsup src/index.ts --format esm --watch",
+    "start": "node dist/index.mjs"
   },
   "engines": {
     "node": ">=18.0.0"
