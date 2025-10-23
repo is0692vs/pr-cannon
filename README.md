@@ -10,7 +10,9 @@ A CLI tool that automatically creates Pull Requests by sending files to any GitH
 ## ✨ Features
 
 - 🚀 **Fully Automated**: File reading → Branch creation → Commit → PR creation
-- 📁 **Flexible Path Control**: Custom destination paths with `--path` option
+- 📁 **Folder Support**: Send entire directories with multiple files
+- 🗂️ **Directory Structure Preservation**: Maintains folder hierarchy in target repository
+- 📄 **Flexible Path Control**: Custom destination paths with `--path` option
 - 🔒 **Secure**: Uses GitHub Personal Access Token
 - 🎯 **Simple CLI**: Intuitive command-line interface
 - 📦 **Multiple File Types**: Supports Markdown, JavaScript, JSON, text files, etc.
@@ -62,18 +64,18 @@ set GITHUB_TOKEN=ghp_your_token_here
 ### Basic Usage
 
 ```bash
-pr-cannon fire <file> <owner/repo>
+pr-cannon fire <file-or-folder> <owner/repo>
 ```
 
 You can also use the short alias `prca`:
 
 ```bash
-prca fire <file> <owner/repo>
+prca fire <file-or-folder> <owner/repo>
 ```
 
 ### Examples
 
-**Send a file to repository:**
+**Send a single file to repository:**
 
 ```bash
 pr-cannon fire README.md is0692vs/pr-cannon
@@ -85,7 +87,15 @@ Or use the shorter command:
 prca fire README.md is0692vs/pr-cannon
 ```
 
-**Specify custom destination path:**
+**Send an entire folder to repository:**
+
+```bash
+pr-cannon fire ./src is0692vs/project --path uploaded/src
+```
+
+This will recursively send all files from `./src` directory while maintaining the folder structure.
+
+**Specify custom destination path for file:**
 
 ```bash
 pr-cannon fire config.js is0692vs/project --path src/config.js
@@ -106,10 +116,10 @@ pr-cannon fire ./examples/sample.txt is0692vs/showcase
 ### Command Reference
 
 ```
-pr-cannon fire [options] <file> <repo>
+pr-cannon fire [options] <file-or-folder> <repo>
 
 Arguments:
-  file               File path to send
+  file-or-folder     File or folder path to send
   repo               Repository in owner/repo format
 
 Options:
@@ -119,12 +129,16 @@ Options:
 
 ## 📖 How It Works
 
-1. **Reads** your local file and encodes it
-2. **Connects** to GitHub API using your token
-3. **Creates** a new branch with unique timestamp
-4. **Commits** the file to the new branch
-5. **Opens** a Pull Request automatically
-6. **Displays** PR URL in your terminal
+1. **Reads** your local file or files in folder and encodes them
+2. **Detects** if input is a file or directory
+3. **Recursively collects** all files from directory (if applicable) while:
+   - Excluding `.git`, `node_modules`, `.DS_Store`, and hidden files
+   - Preserving directory structure with relative paths
+4. **Connects** to GitHub API using your token
+5. **Creates** a new branch with unique timestamp
+6. **Commits** all files to the new branch in a single commit
+7. **Opens** a Pull Request automatically
+8. **Displays** PR URL in your terminal
 
 ## 🎯 Use Cases
 
@@ -133,6 +147,8 @@ Options:
 - **Configuration updates** across repositories
 - **Documentation synchronization**
 - **Code snippet sharing**
+- **Bulk folder deployment** across projects
+- **Multi-file library distribution**
 
 ## 🛠️ Development
 
@@ -151,27 +167,75 @@ npm run build
 node dist/index.mjs fire <file> <repo>
 ```
 
+## 🧪 Testing
+
+The project includes a comprehensive test suite for the folder sending feature (Issue #7).
+
+### Quick Test Verification
+
+```bash
+# Verify test structure and files
+./tests/verify.sh
+```
+
+### Run Full Test Suite
+
+Prerequisites:
+- `gh` (GitHub CLI): https://cli.github.com/
+- `GITHUB_TOKEN` environment variable set
+
+```bash
+# Run tests against a test repository
+./tests/run-tests.sh is0692vs/test-pr-cannon
+
+# Then cleanup test PRs
+./tests/cleanup.sh is0692vs/test-pr-cannon
+```
+
+**What gets tested:**
+- ✅ Single file sending
+- ✅ Folder/directory sending with multiple files
+- ✅ Directory structure preservation
+- ✅ File exclusion patterns (.git, node_modules, hidden files)
+- ✅ Edge cases (deeply nested directories, special characters)
+
+For detailed testing documentation, see [TESTING.md](TESTING.md) and [tests/README.md](tests/README.md).
+
 ## 📝 Examples
 
 ### Real-world Scenarios
 
-**1. Share configuration across projects:**
+**1. Share single configuration file across projects:**
 
 ```bash
 pr-cannon fire .eslintrc.json team/project-a --path .eslintrc.json
 pr-cannon fire .eslintrc.json team/project-b --path .eslintrc.json
 ```
 
-**2. Distribute documentation:**
+**2. Send entire source folder to another repository:**
 
 ```bash
-pr-cannon fire API.md company/docs --path api/endpoints.md
+pr-cannon fire ./src team/shared-lib --path lib/source
 ```
 
-**3. Send project files to showcase repository:**
+This sends all files under `./src` directory while maintaining the structure.
+
+**3. Distribute documentation folder:**
 
 ```bash
-pr-cannon fire src/main.ts showcase/repo --path examples/typescript/main.ts
+pr-cannon fire ./docs company/knowledge-base --path markdown/guides
+```
+
+**4. Share project templates:**
+
+```bash
+pr-cannon fire ./templates/react-app showcase/templates --path templates/react
+```
+
+**5. Send configuration directory:**
+
+```bash
+pr-cannon fire ./config team/project --path config
 ```
 
 ## ⚠️ Troubleshooting
@@ -256,13 +320,13 @@ source ~/.zshrc
 **基本的な使い方:**
 
 ```bash
-pr-cannon fire <ファイル> <owner/repo>
+pr-cannon fire <ファイルまたはフォルダ> <owner/repo>
 ```
 
 短縮コマンド `prca` も使用できます:
 
 ```bash
-prca fire <ファイル> <owner/repo>
+prca fire <ファイルまたはフォルダ> <owner/repo>
 ```
 
 **例: is0692vs/pr-cannon リポジトリにファイルを送信**
@@ -276,6 +340,14 @@ pr-cannon fire README.md is0692vs/pr-cannon
 ```bash
 prca fire README.md is0692vs/pr-cannon
 ```
+
+**フォルダ全体を送信:**
+
+```bash
+pr-cannon fire ./src is0692vs/project --path uploaded/src
+```
+
+`./src` ディレクトリ内のすべてのファイルをフォルダ構造を保持しながら送信します。
 
 **カスタムパス指定:**
 
