@@ -1,0 +1,17 @@
+# Source files
+src/
+tsconfig.json
+tsup.config.ts
+
+# Test files
+test*.md
+test*.js
+test*.txt
+examples/
+TEST_REPORT.md
+
+# Development
+node_modules/
+.git/
+.gitignore
+*.log
