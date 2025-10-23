@@ -28,6 +28,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@octokit/rest": "latest",
     "commander": "latest"
   },
   "devDependencies": {
