@@ -237,9 +237,7 @@ export async function createPullRequest(
       bodyChanges = `- Added ${fileCount} files:\n${fileList
         .slice(0, 10)
         .map((f) => `  - \`${f}\``)
-        .join(
-          "\n"
-        )}\n  - ... and ${fileCount - 10} more files`;
+        .join("\n")}\n  - ... and ${fileCount - 10} more files`;
     }
 
     const body = `🎯 This PR was automatically created by [pr-cannon](https://github.com/is0692vs/pr-cannon)

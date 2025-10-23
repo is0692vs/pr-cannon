@@ -39,7 +39,10 @@ program
 program
   .command("fire")
   .description("Fire multiple files or folders to a repository as a PR")
-  .argument("<paths...>", "Files or folders to send (last argument is the repository)")
+  .argument(
+    "<paths...>",
+    "Files or folders to send (last argument is the repository)"
+  )
   .option("-p, --path <path>", "Destination path in the repository")
   .action(async (inputArgs: string[], options) => {
     try {

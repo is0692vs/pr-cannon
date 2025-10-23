@@ -463,7 +463,7 @@ prca fire README.md is0692vs/pr-cannon
 pr-cannon fire README.md config.json LICENSE is0692vs/pr-cannon
 ```
 
-3つのファイルすべてが 1 つの PR に含まれます。
+3 つのファイルすべてが 1 つの PR に含まれます。
 
 **複数フォルダを 1 つの PR で送信:**
 
