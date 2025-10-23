@@ -31,6 +31,7 @@ tests/
 ## Running Tests
 
 ### Step 1: Prerequisites
+
 ```bash
 # Install pr-cannon globally
 npm install -g pr-cannon
@@ -45,6 +46,7 @@ export GITHUB_TOKEN="ghp_your_token_here"
 ```
 
 ### Step 2: Run Tests
+
 ```bash
 # Run against test repository
 ./tests/run-tests.sh is0692vs/test-pr-cannon
@@ -54,6 +56,7 @@ export GITHUB_TOKEN="ghp_your_token_here"
 ```
 
 **Output Example:**
+
 ```
 🧪 PR Cannon Folder Sending Feature Test
 
@@ -105,6 +108,7 @@ The `cleanup.sh` script automates the entire process:
 ```
 
 **What it does:**
+
 1. Reads `pr-numbers.txt` (created by `run-tests.sh`)
 2. For each PR:
    - Adds a comment explaining it was an automated test for Issue #7
@@ -112,6 +116,7 @@ The `cleanup.sh` script automates the entire process:
 3. Cleans up temporary files
 
 **Output Example:**
+
 ```
 🧹 PR Cannon Test PR Cleanup
 
@@ -153,18 +158,21 @@ This is an automated test PR and is now being closed.
 ## Test Coverage
 
 ### Test 1: Single File Sending
+
 - ✅ Send single `.md` file
 - ✅ Verify file arrives in destination
 - ✅ Check file integrity
 - ✅ PR title and description correct
 
 ### Test 2: Folder Structure Sending
+
 - ✅ Send multiple files in folder
 - ✅ Preserve directory structure
 - ✅ Maintain file relationships
 - ✅ Correct relative paths
 
 ### Test 3: Edge Cases
+
 - ✅ Deeply nested directories (3 levels)
 - ✅ Special characters in filenames
 - ✅ Empty directories (excluded)
@@ -173,19 +181,23 @@ This is an automated test PR and is now being closed.
 ## Troubleshooting
 
 ### "gh command not found"
+
 Install GitHub CLI: https://cli.github.com/
 
 ### "GITHUB_TOKEN not found"
+
 ```bash
 export GITHUB_TOKEN="ghp_your_token_here"
 ```
 
 ### "Repository not found"
+
 - Verify repository exists
 - Check you have access
 - Ensure format: `owner/repo`
 
 ### "No pr-numbers.txt file found"
+
 Run `./tests/run-tests.sh` first to create test PRs
 
 ## Continuous Integration

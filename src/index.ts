@@ -147,4 +147,99 @@ program
     }
   });
 
+program
+  .command("test")
+  .description("Create a test PR from current directory")
+  .argument("<repo>", "Repository (owner/repo format)")
+  .option("-p, --path <path>", "Destination path in the repository")
+  .action(async (repo, options) => {
+    try {
+      const cwd = process.cwd();
+      console.log(`🧪 Test PR Creation Mode`);
+      console.log(`📍 Current directory: ${cwd}`);
+      console.log(`🎯 Target repository: ${repo}`);
+
+      // カレントディレクトリの状態を確認
+      const stat = statSync(cwd);
+      if (!stat.isDirectory()) {
+        throw new FileReadError(
+          "Current working directory is not valid",
+          cwd
+        );
+      }
+
+      console.log(`\n📊 Analyzing current directory...`);
+
+      // ディレクトリ内のファイルを再帰的に収集
+      const absoluteFilePaths = await collectFilesRecursively(cwd);
+      console.log(`✅ Found ${absoluteFilePaths.length} files to test`);
+
+      if (absoluteFilePaths.length === 0) {
+        throw new FileReadError(
+          "No files found in current directory (or all excluded)",
+          "NO_FILES"
+        );
+      }
+
+      // 複数ファイルを読み込み
+      let fileContentsArray = await readMultipleFiles(
+        absoluteFilePaths,
+        cwd
+      );
+
+      const dirName = basename(cwd);
+      console.log(`📁 Directory name: ${dirName}`);
+
+      // 送信先パスを決定
+      let destinationBase = options.path || `test-${dirName}-${Date.now()}`;
+      fileContentsArray = fileContentsArray.map((f) => ({
+        path: join(destinationBase, f.path),
+        content: f.content,
+      }));
+
+      // GitHub API連携
+      console.log(`\n🔗 Connecting to GitHub...`);
+      const repoInfo = await getRepoInfo(repo);
+      console.log(`✅ Repository: ${repoInfo.fullName}`);
+
+      // ファイルをコミット
+      console.log(`\n🌿 Creating test branch...`);
+      const { branchName, commitSha } = await createBranchWithFile(
+        repo,
+        cwd,
+        fileContentsArray
+      );
+      console.log(`✅ Branch created: ${branchName}`);
+      console.log(`✅ Commit created: ${commitSha.substring(0, 7)}`);
+
+      // Pull Request を作成
+      console.log(`\n🚀 Creating test PR...`);
+      const filePaths = fileContentsArray.map((f) => f.path);
+      const { prNumber, prUrl } = await createPullRequest(
+        repo,
+        branchName,
+        `test: ${dirName}`,
+        filePaths
+      );
+
+      console.log(`✅ Test PR created: #${prNumber}`);
+      console.log(`🔗 PR URL: ${prUrl}`);
+      console.log(`\n📝 Test Info:`);
+      console.log(`   Files: ${absoluteFilePaths.length}`);
+      console.log(`   Destination: ${destinationBase}`);
+      console.log(`\n🎉 Test PR ready for validation! 🧪`);
+    } catch (error) {
+      if (error instanceof FileReadError) {
+        console.error(`\n❌ File Error: ${error.message}`);
+        process.exit(1);
+      }
+      if (error instanceof GitHubError) {
+        console.error(`\n❌ GitHub Error: ${error.message}`);
+        process.exit(1);
+      }
+      console.error(`\n❌ Unexpected error:`, error);
+      process.exit(1);
+    }
+  });
+
 program.parse();

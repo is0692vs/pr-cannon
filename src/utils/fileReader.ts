@@ -4,8 +4,8 @@ import { constants } from "fs";
 
 export interface FileContent {
   path: string;
-  content: string; // Base64エンコード済み
-  encoding: "base64";
+  content: string;
+  encoding?: "base64";
 }
 
 export class FileReadError extends Error {

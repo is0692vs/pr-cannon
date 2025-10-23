@@ -181,6 +181,7 @@ The project includes a comprehensive test suite for the folder sending feature (
 ### Run Full Test Suite
 
 Prerequisites:
+
 - `gh` (GitHub CLI): https://cli.github.com/
 - `GITHUB_TOKEN` environment variable set
 
@@ -193,6 +194,7 @@ Prerequisites:
 ```
 
 **What gets tested:**
+
 - ✅ Single file sending
 - ✅ Folder/directory sending with multiple files
 - ✅ Directory structure preservation

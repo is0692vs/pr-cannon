@@ -3,15 +3,20 @@ src/
 tsconfig.json
 tsup.config.ts
 
-# Test files
+# Test files and directories
+tests/
 test*.md
 test*.js
 test*.txt
 examples/
 TEST_REPORT.md
+TESTING.md
+.test-setup-log
 
 # Development
 node_modules/
 .git/
 .gitignore
 *.log
+features/
+docs/
