@@ -2,19 +2,24 @@
 
 import { Command } from "commander";
 import { readFileSync, statSync } from "fs";
-import { join, dirname, basename } from "path";
+import * as fs from "fs/promises";
+import { join, dirname, basename, resolve } from "path";
 import { fileURLToPath } from "url";
 import {
   readFileAsBase64,
   collectFilesRecursively,
   readMultipleFiles,
   FileReadError,
+  resolveFilePath,
+  checkFileAccess,
+  FileContent,
 } from "./utils/fileReader.js";
 import {
   getRepoInfo,
   GitHubError,
   createBranchWithFile,
   createPullRequest,
+  generateBranchName,
 } from "./utils/github.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,107 +38,107 @@ program
   .version(packageJson.version);
 program
   .command("fire")
-  .description("Fire a file or folder to a repository as a PR")
-  .argument("<file>", "File or folder path to send")
-  .argument("<repo>", "Repository (owner/repo format)")
+  .description("Fire multiple files or folders to a repository as a PR")
+  .argument("<paths...>", "Files or folders to send (last argument is the repository)")
   .option("-p, --path <path>", "Destination path in the repository")
-  .action(async (fileOrFolder, repo, options) => {
+  .action(async (inputArgs: string[], options) => {
     try {
-      console.log(`🎯 Targeting: ${repo}`);
-      console.log(`📄 Source: ${fileOrFolder}`);
-
-      // ファイル/フォルダの存在確認とタイプ判定
-      const stat = statSync(fileOrFolder);
-      const isDirectory = stat.isDirectory();
-
-      let fileContentsArray: Array<{ path: string; content: string }> = [];
-      let sourceName: string;
-      let filePaths: string[] = [];
-
-      if (isDirectory) {
-        // ✅ フォルダ処理
-        console.log(`📁 Directory detected`);
-        sourceName = basename(fileOrFolder);
-
-        // ディレクトリ内のファイルを再帰的に収集
-        const absoluteFilePaths = await collectFilesRecursively(fileOrFolder);
-        console.log(`✅ Found ${absoluteFilePaths.length} files`);
-
-        if (absoluteFilePaths.length === 0) {
-          throw new FileReadError(
-            "No files found in directory (or all excluded)",
-            "NO_FILES"
-          );
-        }
-
-        // 複数ファイルを読み込み（相対パスを保持）
-        fileContentsArray = await readMultipleFiles(
-          absoluteFilePaths,
-          fileOrFolder
+      // 最後の引数をレポジトリとして分離
+      if (inputArgs.length < 2) {
+        console.error(
+          "❌ Error: At least one file/folder and a repository must be specified"
         );
-        filePaths = fileContentsArray.map((f) => f.path);
-
-        // 送信先パスを決定
-        let destinationBase = options.path || sourceName;
-        fileContentsArray = fileContentsArray.map((f) => ({
-          path: join(destinationBase, f.path),
-          content: f.content,
-        }));
-      } else {
-        // ✅ ファイル処理（既存ロジック）
-        const fileContent = await readFileAsBase64(fileOrFolder);
-        console.log(`✅ File loaded: ${fileContent.path}`);
-        console.log(
-          `📦 Content size: ${fileContent.content.length} bytes (base64)`
-        );
-
-        // Base64 をデコード
-        const decodedContent = Buffer.from(
-          fileContent.content,
-          "base64"
-        ).toString("utf-8");
-
-        // 送信先パスを決定
-        const destinationPath = options.path || basename(fileOrFolder);
-        fileContentsArray = [
-          {
-            path: destinationPath,
-            content: decodedContent,
-          },
-        ];
-        filePaths = [destinationPath];
-        sourceName = basename(fileOrFolder);
+        console.error("� Usage: prca fire <file1> [file2...] <owner/repo>");
+        process.exit(1);
       }
 
+      const repo = inputArgs[inputArgs.length - 1];
+      const inputPaths = inputArgs.slice(0, -1);
+
+      console.log(`🎯 Targeting: ${repo}`);
+      console.log(`📦 Input paths: ${inputPaths.length} item(s)`);
+
+      // すべてのファイルを収集
+      const allFiles: FileContent[] = [];
+      const processedPaths: string[] = [];
+
+      for (const inputPath of inputPaths) {
+        try {
+          const resolvedPath = resolveFilePath(inputPath);
+          await checkFileAccess(resolvedPath);
+          const stats = await fs.stat(resolvedPath);
+
+          if (stats.isDirectory()) {
+            console.log(`📁 Collecting files from directory: ${inputPath}`);
+            const dirFiles = await collectFilesRecursively(inputPath);
+
+            if (dirFiles.length === 0) {
+              console.error(
+                `❌ Error: Directory is empty or contains only excluded files: ${inputPath}`
+              );
+              process.exit(1);
+            }
+
+            const contents = await readMultipleFiles(dirFiles, inputPath);
+            allFiles.push(...contents);
+            processedPaths.push(`${inputPath}/ (${dirFiles.length} files)`);
+          } else {
+            console.log(`📄 Reading file: ${inputPath}`);
+            const fileContent = await readFileAsBase64(inputPath);
+            const fileName = basename(inputPath);
+            allFiles.push({
+              path: fileName,
+              content: fileContent.content,
+              encoding: "base64" as const,
+            });
+            processedPaths.push(inputPath);
+          }
+        } catch (error) {
+          if (error instanceof FileReadError) {
+            console.error(`❌ Error: ${error.message}`);
+          } else {
+            console.error(`❌ Error accessing path "${inputPath}"`);
+          }
+          process.exit(1);
+        }
+      }
+
+      console.log(`\n✅ Total files collected: ${allFiles.length}`);
+      processedPaths.forEach((p) => console.log(`   - ${p}`));
+
       // GitHub API連携
-      console.log("\n🔗 Connecting to GitHub...");
+      console.log(`\n🔗 Connecting to GitHub...`);
       const repoInfo = await getRepoInfo(repo);
       console.log(`✅ Repository: ${repoInfo.fullName}`);
       console.log(`🌿 Default branch: ${repoInfo.defaultBranch}`);
-      console.log(`� Files to add: ${fileContentsArray.length}`);
+
+      // ブランチ名の生成（複数ファイル対応）
+      const branchName =
+        inputPaths.length === 1
+          ? generateBranchName(inputPaths[0])
+          : generateBranchName("multiple-files");
 
       // ファイルをコミット
-      console.log("\n🌿 Creating branch and committing...");
-      const { branchName, commitSha } = await createBranchWithFile(
-        repo,
-        fileOrFolder,
-        fileContentsArray
-      );
-      console.log(`✅ Branch created: ${branchName}`);
+      console.log(`\n🌿 Creating branch and committing...`);
+      const { branchName: createdBranch, commitSha } =
+        await createBranchWithFile(repo, "pr-cannon", allFiles, branchName);
+      console.log(`✅ Branch created: ${createdBranch}`);
       console.log(`✅ Commit created: ${commitSha.substring(0, 7)}`);
 
       // Pull Request を作成
-      console.log("\n🚀 Creating pull request...");
+      console.log(`\n🚀 Creating pull request...`);
+      const filePaths = allFiles.map((f) => f.path);
       const { prNumber, prUrl } = await createPullRequest(
         repo,
-        branchName,
-        sourceName,
-        filePaths
+        createdBranch,
+        inputPaths.length === 1 ? basename(inputPaths[0]) : "multiple files",
+        filePaths,
+        allFiles.length
       );
 
       console.log(`✅ Pull request created: #${prNumber}`);
       console.log(`🔗 PR URL: ${prUrl}`);
-      console.log("\n🎉 Done! Your file has been fired! 💣");
+      console.log(`\n🎉 Done! ${allFiles.length} file(s) have been fired! 💣`);
     } catch (error) {
       if (error instanceof FileReadError) {
         console.error(`\n❌ File Error: ${error.message}`);
@@ -143,7 +148,8 @@ program
         console.error(`\n❌ GitHub Error: ${error.message}`);
         process.exit(1);
       }
-      throw error;
+      console.error(`\n❌ Unexpected error:`, error);
+      process.exit(1);
     }
   });
 
@@ -189,6 +195,7 @@ program
       fileContentsArray = fileContentsArray.map((f) => ({
         path: join(destinationBase, f.path),
         content: f.content,
+        encoding: "base64" as const,
       }));
 
       // GitHub API連携
@@ -213,7 +220,8 @@ program
         repo,
         branchName,
         `test: ${dirName}`,
-        filePaths
+        filePaths,
+        absoluteFilePaths.length
       );
 
       console.log(`✅ Test PR created: #${prNumber}`);
