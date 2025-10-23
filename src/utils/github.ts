@@ -207,7 +207,8 @@ export async function createPullRequest(
   repoUrl: string,
   branchName: string,
   sourceName: string, // ファイル名またはディレクトリ名
-  fileList: string[] // 追加されたファイルのパスリスト
+  fileList: string[], // 追加されたファイルのパスリスト
+  totalFileCount?: number // 合計ファイル数（複数送信時用）
 ): Promise<{ prNumber: number; prUrl: string }> {
   const { owner, repo } = parseRepoUrl(repoUrl);
   const token = getGitHubToken();
@@ -218,21 +219,25 @@ export async function createPullRequest(
     const defaultBranch = repoInfo.defaultBranch;
 
     // PR タイトルを生成
+    const fileCount = totalFileCount || fileList.length;
     const title =
-      fileList.length === 1
+      fileCount === 1
         ? `Add ${basename(fileList[0])} via pr-cannon`
-        : `Add ${basename(sourceName)} directory via pr-cannon`;
+        : `Add ${fileCount} files via pr-cannon`;
 
-    // PR 説明文を生成
+    // PR 説明文を生成（複数ファイル対応）
     let bodyChanges: string;
-    if (fileList.length === 1) {
+    if (fileCount === 1) {
       bodyChanges = `- Added file: \`${fileList[0]}\``;
     } else if (fileList.length <= 10) {
-      bodyChanges = `- Added ${fileList.length} files:\n${fileList
+      bodyChanges = `- Added ${fileCount} files:\n${fileList
         .map((f) => `  - \`${f}\``)
         .join("\n")}`;
     } else {
-      bodyChanges = `- Added ${fileList.length} files from \`${sourceName}\` directory`;
+      bodyChanges = `- Added ${fileCount} files:\n${fileList
+        .slice(0, 10)
+        .map((f) => `  - \`${f}\``)
+        .join("\n")}\n  - ... and ${fileCount - 10} more files`;
     }
 
     const body = `🎯 This PR was automatically created by [pr-cannon](https://github.com/is0692vs/pr-cannon)

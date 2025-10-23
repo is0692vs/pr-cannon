@@ -1,6 +1,6 @@
 {
   "name": "pr-cannon",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "🔥 Fire your files to any repository as a Pull Request",
   "keywords": [
     "cli",

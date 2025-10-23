@@ -65,13 +65,13 @@ set GITHUB_TOKEN=ghp_your_token_here
 ### Basic Usage
 
 ```bash
-pr-cannon fire <file-or-folder> <owner/repo>
+pr-cannon fire <file-or-folder> [file-or-folder...] <owner/repo>
 ```
 
 You can also use the short alias `prca`:
 
 ```bash
-prca fire <file-or-folder> <owner/repo>
+prca fire <file-or-folder> [file-or-folder...] <owner/repo>
 ```
 
 ### Examples
@@ -87,6 +87,30 @@ Or use the shorter command:
 ```bash
 prca fire README.md is0692vs/pr-cannon
 ```
+
+**Send multiple files in a single PR (Issue #8):**
+
+```bash
+pr-cannon fire README.md config.json LICENSE is0692vs/pr-cannon
+```
+
+This creates a single PR with all three files.
+
+**Send multiple folders in a single PR:**
+
+```bash
+pr-cannon fire ./src ./tests ./docs is0692vs/project
+```
+
+All files from all folders will be included in one PR while maintaining directory structure.
+
+**Mix files and folders in a single PR:**
+
+```bash
+pr-cannon fire README.md ./src LICENSE ./docs is0692vs/project
+```
+
+Combines individual files and entire directories into one PR.
 
 **Send an entire folder to repository:**
 
@@ -114,6 +138,14 @@ pr-cannon fire guide.md is0692vs/docs --path docs/guides/setup.md
 pr-cannon fire ./examples/sample.txt is0692vs/showcase
 ```
 
+**Multiple files with custom paths:**
+
+```bash
+pr-cannon fire config.json types.ts utils.ts is0692vs/project --path src/
+```
+
+All files will be placed in the `src/` directory maintaining their original filenames.
+
 ### Test Mode
 
 Create a test PR from the current directory with automatic timestamp-based paths:
@@ -129,6 +161,7 @@ prca test is0692vs/test-pr-cannon
 ```
 
 This command:
+
 - 📍 Collects all files from the current directory
 - ⏰ Creates an automatic destination path with timestamp
 - 🧪 Perfect for testing the folder sending feature
@@ -136,11 +169,12 @@ This command:
 ### Command Reference
 
 **Fire Command:**
+
 ```
-pr-cannon fire [options] <file-or-folder> <repo>
+pr-cannon fire [options] <file-or-folder> [file-or-folder...] <repo>
 
 Arguments:
-  file-or-folder     File or folder path to send
+  file-or-folder     One or more file or folder paths to send
   repo               Repository in owner/repo format
 
 Options:
@@ -148,7 +182,28 @@ Options:
   -h, --help         Display help for command
 ```
 
+**Batch Multiple Files/Folders:**
+
+You can specify multiple files and/or folders to send them all in a single PR:
+
+```bash
+# Multiple files
+pr-cannon fire file1.md file2.md config.json owner/repo
+
+# Multiple folders
+pr-cannon fire ./src ./tests ./docs owner/repo
+
+# Mix files and folders
+pr-cannon fire README.md ./src ./docs LICENSE owner/repo
+
+# With custom path
+pr-cannon fire config.md utils.js ./helpers owner/repo --path src/
+```
+
+All items will be combined into a single Pull Request.
+
 **Test Command:**
+
 ```
 pr-cannon test [options] <repo>
 
@@ -163,6 +218,7 @@ Options:
 ## 📖 How It Works
 
 ### File Sending
+
 1. **Reads** your local file and encodes it
 2. **Connects** to GitHub API using your token
 3. **Creates** a new branch with unique timestamp
@@ -170,17 +226,19 @@ Options:
 5. **Opens** a Pull Request automatically
 6. **Displays** PR URL in your terminal
 
-### Folder Sending (Issue #7)
+### Folder Sending (Issue #7) & Multiple Files/Folders (Issue #8)
+
 1. **Detects** if input is a file or directory
-2. **Recursively collects** all files from directory while:
+2. **Recursively collects** all files from directories while:
    - Excluding `.git`, `node_modules`, `.DS_Store`, and hidden files
    - Preserving directory structure with relative paths
 3. **Reads** all files and encodes them
-4. **Connects** to GitHub API using your token
-5. **Creates** a new branch with unique timestamp
-6. **Commits** all files in a single commit (preserves structure)
-7. **Opens** a Pull Request automatically
-8. **Displays** PR URL and summary in your terminal
+4. **Combines multiple inputs** into a single file list when multiple paths are specified
+5. **Connects** to GitHub API using your token
+6. **Creates** a new branch with unique timestamp
+7. **Commits** all files in a single commit (preserves structure)
+8. **Opens** a Pull Request automatically
+9. **Displays** PR URL and summary in your terminal
 
 ## 🎯 Use Cases
 
@@ -282,6 +340,20 @@ pr-cannon fire ./templates/react-app showcase/templates --path templates/react
 pr-cannon fire ./config team/project --path config
 ```
 
+**6. Send multiple template files in one PR (Issue #8):**
+
+```bash
+pr-cannon fire ./templates/react ./templates/vue ./templates/svelte showcase/all-templates
+```
+
+**7. Setup complete project structure in one PR:**
+
+```bash
+pr-cannon fire ./src ./tests ./docs README.md LICENSE new-project/repo
+```
+
+This sends all source code, tests, documentation, and metadata files in a single PR.
+
 ## ⚠️ Troubleshooting
 
 ### "GitHub token not found" error
@@ -364,13 +436,13 @@ source ~/.zshrc
 **基本的な使い方:**
 
 ```bash
-pr-cannon fire <ファイルまたはフォルダ> <owner/repo>
+pr-cannon fire <ファイルまたはフォルダ> [ファイルまたはフォルダ...] <owner/repo>
 ```
 
 短縮コマンド `prca` も使用できます:
 
 ```bash
-prca fire <ファイルまたはフォルダ> <owner/repo>
+prca fire <ファイルまたはフォルダ> [ファイルまたはフォルダ...] <owner/repo>
 ```
 
 **例: is0692vs/pr-cannon リポジトリにファイルを送信**
@@ -384,6 +456,30 @@ pr-cannon fire README.md is0692vs/pr-cannon
 ```bash
 prca fire README.md is0692vs/pr-cannon
 ```
+
+**複数ファイルを 1 つの PR で送信（Issue #8）:**
+
+```bash
+pr-cannon fire README.md config.json LICENSE is0692vs/pr-cannon
+```
+
+3 つのファイルすべてが 1 つの PR に含まれます。
+
+**複数フォルダを 1 つの PR で送信:**
+
+```bash
+pr-cannon fire ./src ./tests ./docs is0692vs/project
+```
+
+すべてのフォルダ内のすべてのファイルが 1 つの PR に含まれ、ディレクトリ構造が保持されます。
+
+**ファイルとフォルダを混在して 1 つの PR で送信:**
+
+```bash
+pr-cannon fire README.md ./src LICENSE ./docs is0692vs/project
+```
+
+個別ファイルと全体ディレクトリが 1 つの PR に統合されます。
 
 **フォルダ全体を送信:**
 
@@ -412,6 +508,7 @@ prca test is0692vs/test-pr-cannon
 ```
 
 このコマンドで：
+
 - 📍 カレントディレクトリのすべてのファイルを収集
 - ⏰ タイムスタンプベースの自動送信先パスを作成
 - 🧪 フォルダ送信機能のテストに最適
