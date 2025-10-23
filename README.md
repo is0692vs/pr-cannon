@@ -65,30 +65,42 @@ set GITHUB_TOKEN=ghp_your_token_here
 pr-cannon fire <file> <owner/repo>
 ```
 
+You can also use the short alias `prca`:
+
+```bash
+prca fire <file> <owner/repo>
+```
+
 ### Examples
 
 **Send a file to repository:**
 
 ```bash
-pr-cannon fire README.md owner/repo
+pr-cannon fire README.md is0692vs/pr-cannon
+```
+
+Or use the shorter command:
+
+```bash
+prca fire README.md is0692vs/pr-cannon
 ```
 
 **Specify custom destination path:**
 
 ```bash
-pr-cannon fire config.js owner/repo --path src/config.js
+pr-cannon fire config.js is0692vs/project --path src/config.js
 ```
 
 **Send file to nested directory:**
 
 ```bash
-pr-cannon fire guide.md owner/repo --path docs/guides/setup.md
+pr-cannon fire guide.md is0692vs/docs --path docs/guides/setup.md
 ```
 
 **Send from subdirectory:**
 
 ```bash
-pr-cannon fire ./examples/sample.txt owner/repo
+pr-cannon fire ./examples/sample.txt is0692vs/showcase
 ```
 
 ### Command Reference
@@ -247,10 +259,34 @@ source ~/.zshrc
 pr-cannon fire <ファイル> <owner/repo>
 ```
 
+短縮コマンド `prca` も使用できます:
+
+```bash
+prca fire <ファイル> <owner/repo>
+```
+
+**例: is0692vs/pr-cannon リポジトリにファイルを送信**
+
+```bash
+pr-cannon fire README.md is0692vs/pr-cannon
+```
+
+または短いコマンドで:
+
+```bash
+prca fire README.md is0692vs/pr-cannon
+```
+
 **カスタムパス指定:**
 
 ```bash
-pr-cannon fire config.js owner/repo --path src/config.js
+pr-cannon fire config.js is0692vs/myproject --path src/config.js
+```
+
+**ネストされたディレクトリに送信:**
+
+```bash
+pr-cannon fire guide.md is0692vs/docs --path docs/guides/setup.md
 ```
 
 ### 主な機能
