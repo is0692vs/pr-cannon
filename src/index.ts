@@ -5,7 +5,12 @@ import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { readFileAsBase64, FileReadError } from "./utils/fileReader.js";
-import { getRepoInfo, GitHubError } from "./utils/github.js";
+import {
+  getRepoInfo,
+  GitHubError,
+  createBranchWithFile,
+} from "./utils/github.js";
+import { basename } from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -45,11 +50,28 @@ program
       console.log(`✅ Repository: ${repoInfo.fullName}`);
       console.log(`🌿 Default branch: ${repoInfo.defaultBranch}`);
 
-      if (options.path) {
-        console.log(`📍 Destination: ${options.path}`);
-      }
+      // 送信先パスを決定
+      const destinationPath = options.path || basename(file);
+      console.log(`📍 Destination: ${destinationPath}`);
 
-      console.log("\n⚠️  Branch creation and PR coming soon...");
+      // ファイルをBase64デコードしてコミット
+      const decodedContent = Buffer.from(
+        fileContent.content,
+        "base64"
+      ).toString("utf-8");
+
+      console.log("\n🌿 Creating branch and committing file...");
+      const { branchName, commitSha } = await createBranchWithFile(
+        repo,
+        file,
+        decodedContent,
+        destinationPath
+      );
+
+      console.log(`✅ Branch created: ${branchName}`);
+      console.log(`✅ Commit created: ${commitSha.substring(0, 7)}`);
+
+      console.log("\n⚠️  PR creation coming soon...");
     } catch (error) {
       if (error instanceof FileReadError) {
         console.error(`\n❌ File Error: ${error.message}`);
