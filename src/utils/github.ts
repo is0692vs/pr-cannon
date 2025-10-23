@@ -1,4 +1,5 @@
 import { Octokit } from "@octokit/rest";
+import { basename } from "path";
 
 export interface RepoInfo {
   owner: string;
@@ -82,6 +83,110 @@ export async function getRepoInfo(repoUrl: string): Promise<RepoInfo> {
     }
     throw new GitHubError(
       `Failed to fetch repository info: ${error.message}`,
+      "API_ERROR"
+    );
+  }
+}
+
+/**
+ * ブランチ名を生成する
+ */
+export function generateBranchName(filePath: string): string {
+  const fileName = basename(filePath);
+  const timestamp = Date.now();
+  return `pr-cannon/add-${fileName}-${timestamp}`;
+}
+
+/**
+ * ファイルをコミットして新しいブランチを作成する
+ */
+export async function createBranchWithFile(
+  repoUrl: string,
+  filePath: string,
+  fileContent: string,
+  destinationPath: string
+): Promise<{ branchName: string; commitSha: string }> {
+  const { owner, repo } = parseRepoUrl(repoUrl);
+  const token = getGitHubToken();
+  const octokit = createOctokitClient(token);
+
+  try {
+    // リポジトリ情報を取得
+    const repoInfo = await getRepoInfo(repoUrl);
+    const defaultBranch = repoInfo.defaultBranch;
+
+    // デフォルトブランチの最新コミットを取得
+    const { data: refData } = await octokit.rest.git.getRef({
+      owner,
+      repo,
+      ref: `heads/${defaultBranch}`,
+    });
+    const baseSha = refData.object.sha;
+
+    // 新しいブランチ名を生成
+    const branchName = generateBranchName(filePath);
+
+    // 新しいブランチを作成
+    await octokit.rest.git.createRef({
+      owner,
+      repo,
+      ref: `refs/heads/${branchName}`,
+      sha: baseSha,
+    });
+
+    // ベースツリーを取得
+    const { data: baseCommit } = await octokit.rest.git.getCommit({
+      owner,
+      repo,
+      commit_sha: baseSha,
+    });
+    const baseTreeSha = baseCommit.tree.sha;
+
+    // 新しいツリーを作成（ファイルを追加）
+    const { data: newTree } = await octokit.rest.git.createTree({
+      owner,
+      repo,
+      base_tree: baseTreeSha,
+      tree: [
+        {
+          path: destinationPath,
+          mode: "100644",
+          type: "blob",
+          content: fileContent,
+        },
+      ],
+    });
+
+    // 新しいコミットを作成
+    const { data: newCommit } = await octokit.rest.git.createCommit({
+      owner,
+      repo,
+      message: `Add ${basename(filePath)} via pr-cannon`,
+      tree: newTree.sha,
+      parents: [baseSha],
+    });
+
+    // ブランチの参照を更新
+    await octokit.rest.git.updateRef({
+      owner,
+      repo,
+      ref: `heads/${branchName}`,
+      sha: newCommit.sha,
+    });
+
+    return {
+      branchName,
+      commitSha: newCommit.sha,
+    };
+  } catch (error: any) {
+    if (error.status === 422) {
+      throw new GitHubError(
+        "Failed to create branch or commit. The file might already exist.",
+        "COMMIT_FAILED"
+      );
+    }
+    throw new GitHubError(
+      `Failed to create branch with file: ${error.message}`,
       "API_ERROR"
     );
   }
