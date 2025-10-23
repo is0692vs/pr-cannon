@@ -162,10 +162,7 @@ program
       // カレントディレクトリの状態を確認
       const stat = statSync(cwd);
       if (!stat.isDirectory()) {
-        throw new FileReadError(
-          "Current working directory is not valid",
-          cwd
-        );
+        throw new FileReadError("Current working directory is not valid", cwd);
       }
 
       console.log(`\n📊 Analyzing current directory...`);
@@ -182,10 +179,7 @@ program
       }
 
       // 複数ファイルを読み込み
-      let fileContentsArray = await readMultipleFiles(
-        absoluteFilePaths,
-        cwd
-      );
+      let fileContentsArray = await readMultipleFiles(absoluteFilePaths, cwd);
 
       const dirName = basename(cwd);
       console.log(`📁 Directory name: ${dirName}`);
