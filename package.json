@@ -19,7 +19,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/is0692vs/pr-cannon.git"
+    "url": "git+https://github.com/is0692vs/pr-cannon.git"
   },
   "bugs": {
     "url": "https://github.com/is0692vs/pr-cannon/issues"
