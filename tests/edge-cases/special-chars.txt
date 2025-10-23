@@ -1,0 +1,2 @@
+Special character file: special-chars!@#$%.txt
+This file tests if pr-cannon handles special characters correctly.

@@ -1,0 +1,3 @@
+This is a deeply nested file for testing nested directory structures.
+
+The file is located at: deeply/nested/structure/file.txt
