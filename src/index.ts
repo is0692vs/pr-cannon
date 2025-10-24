@@ -171,7 +171,12 @@ program
           console.log("🔄 Attempting to merge...");
 
           // マージ実行
-          const result = await mergePullRequest(octokit, owner, repoName, prNumber);
+          const result = await mergePullRequest(
+            octokit,
+            owner,
+            repoName,
+            prNumber
+          );
 
           if (result.success) {
             console.log(`✅ ${result.message}`);

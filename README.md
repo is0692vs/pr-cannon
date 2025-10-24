@@ -179,6 +179,7 @@ Arguments:
 
 Options:
   -p, --path <path>  Destination path in the repository
+  -m, --auto-merge   Automatically merge PR if no conflicts and you are the repo owner
   -h, --help         Display help for command
 ```
 
@@ -201,6 +202,24 @@ pr-cannon fire config.md utils.js ./helpers owner/repo --path src/
 ```
 
 All items will be combined into a single Pull Request.
+
+### Auto-merge (for your own repositories)
+
+```bash
+# Automatically merge after PR creation
+prca fire config.json is0692vs/my-repo --auto-merge
+
+# Short version
+prca fire config.json is0692vs/my-repo -m
+
+# Works with multiple files too
+prca fire file1.js file2.js is0692vs/my-repo -m
+```
+
+**Note:** Auto-merge only works if:
+- You are the owner of the target repository
+- There are no merge conflicts
+- All required checks pass
 
 **Test Command:**
 
@@ -501,6 +520,24 @@ pr-cannon fire config.js is0692vs/myproject --path src/config.js
 pr-cannon fire guide.md is0692vs/docs --path docs/guides/setup.md
 ```
 
+### 自動マージ（自分のリポジトリの場合）
+
+```bash
+# PR作成後に自動マージ
+prca fire config.json is0692vs/my-repo --auto-merge
+
+# 短縮版
+prca fire config.json is0692vs/my-repo -m
+
+# 複数ファイルでも使用可能
+prca fire file1.js file2.js is0692vs/my-repo -m
+```
+
+**注意:** 自動マージは以下の条件を満たす場合のみ動作します：
+- 対象リポジトリのオーナーである
+- マージコンフリクトがない
+- すべての必須チェックが通過している
+
 **テストモード（現在のディレクトリから PR を作成）:**
 
 ```bash
@@ -517,8 +554,14 @@ prca test is0692vs/test-pr-cannon
 
 - ✅ ファイル読み込み → ブランチ作成 → コミット → PR 作成を全自動化
 - ✅ `--path`オプションで送信先パスをカスタマイズ
+- ✅ `--auto-merge` / `-m` オプションで PR 作成後に自動マージ（自分のリポジトリのみ）
 - ✅ タイムスタンプ付きブランチ名で重複を防止
 - ✅ 明確なエラーメッセージ
+
+### オプション
+
+- `--path <path>` / `-p`: リポジトリ内の送信先パスを指定
+- `--auto-merge` / `-m`: リポジトリのオーナーでありコンフリクトがない場合，PR作成後に自動的にマージします
 
 ### トラブルシューティング
 
