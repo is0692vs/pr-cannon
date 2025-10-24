@@ -20,6 +20,11 @@ import {
   createBranchWithFile,
   createPullRequest,
   generateBranchName,
+  getGitHubToken,
+  createOctokitClient,
+  parseRepoUrl,
+  isRepoOwner,
+  mergePullRequest,
 } from "./utils/github.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -44,6 +49,10 @@ program
     "Files or folders to send (last argument is the repository)"
   )
   .option("-p, --path <path>", "Destination path in the repository")
+  .option(
+    "-m, --auto-merge",
+    "Automatically merge PR if no conflicts and you are the repo owner"
+  )
   .action(async (inputArgs: string[], options) => {
     try {
       // 最後の引数をレポジトリとして分離
@@ -141,6 +150,39 @@ program
 
       console.log(`✅ Pull request created: #${prNumber}`);
       console.log(`🔗 PR URL: ${prUrl}`);
+
+      // --auto-merge フラグが有効な場合
+      if (options.autoMerge) {
+        console.log("\n🔄 Checking if auto-merge is possible...");
+
+        const token = getGitHubToken();
+        const octokit = createOctokitClient(token);
+        const { owner, repo: repoName } = parseRepoUrl(repo);
+
+        // オーナー確認
+        const isOwner = await isRepoOwner(octokit, owner, repoName);
+
+        if (!isOwner) {
+          console.log(
+            "⚠️  Auto-merge skipped: You are not the owner of this repository."
+          );
+        } else {
+          console.log("✓ Repository owner confirmed.");
+          console.log("🔄 Attempting to merge...");
+
+          // マージ実行
+          const result = await mergePullRequest(octokit, owner, repoName, prNumber);
+
+          if (result.success) {
+            console.log(`✅ ${result.message}`);
+            console.log("🎉 PR has been automatically merged!");
+          } else {
+            console.log(`⚠️  Auto-merge failed: ${result.message}`);
+            console.log(`   Please merge manually: ${prUrl}`);
+          }
+        }
+      }
+
       console.log(`\n🎉 Done! ${allFiles.length} file(s) have been fired! 💣`);
     } catch (error) {
       if (error instanceof FileReadError) {
