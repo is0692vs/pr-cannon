@@ -180,6 +180,7 @@ Arguments:
 Options:
   -p, --path <path>  Destination path in the repository
   -m, --auto-merge   Automatically merge PR if no conflicts and you are the repo owner
+  -k, --keep-branch  Keep the branch after auto-merging (by default, branch is deleted after merge)
   -h, --help         Display help for command
 ```
 
@@ -214,12 +215,19 @@ prca fire config.json is0692vs/my-repo -m
 
 # Works with multiple files too
 prca fire file1.js file2.js is0692vs/my-repo -m
+
+# Keep branch after auto-merge
+prca fire config.json is0692vs/my-repo -m -k
 ```
 
 **Note:** Auto-merge only works if:
+
 - You are the owner of the target repository
 - There are no merge conflicts
 - All required checks pass
+
+By default, the branch is automatically deleted after merging (following GitHub's standard workflow).
+If you want to keep the branch, use the `--keep-branch` / `-k` flag.
 
 **Test Command:**
 
@@ -531,12 +539,19 @@ prca fire config.json is0692vs/my-repo -m
 
 # 複数ファイルでも使用可能
 prca fire file1.js file2.js is0692vs/my-repo -m
+
+# マージ後にブランチを残す
+prca fire config.json is0692vs/my-repo -m -k
 ```
 
 **注意:** 自動マージは以下の条件を満たす場合のみ動作します：
+
 - 対象リポジトリのオーナーである
 - マージコンフリクトがない
 - すべての必須チェックが通過している
+
+デフォルトでは，マージ後にブランチが自動削除されます（GitHub の標準的なワークフロー）．
+ブランチを残したい場合は，`--keep-branch` / `-k` フラグを使用してください．
 
 **テストモード（現在のディレクトリから PR を作成）:**
 
@@ -561,7 +576,8 @@ prca test is0692vs/test-pr-cannon
 ### オプション
 
 - `--path <path>` / `-p`: リポジトリ内の送信先パスを指定
-- `--auto-merge` / `-m`: リポジトリのオーナーでありコンフリクトがない場合，PR作成後に自動的にマージします
+- `--auto-merge` / `-m`: リポジトリのオーナーでありコンフリクトがない場合，PR 作成後に自動的にマージします
+- `--keep-branch` / `-k`: 自動マージ後にブランチを残します（デフォルトではマージ後にブランチ削除）
 
 ### トラブルシューティング
 

@@ -20,6 +20,11 @@ export interface MergeResult {
   message: string;
 }
 
+export interface DeleteBranchResult {
+  success: boolean;
+  message: string;
+}
+
 /**
  * リポジトリURLをパースする（owner/repo形式）
  */
@@ -357,6 +362,43 @@ export async function mergePullRequest(
     return {
       success: false,
       message: error.message || "Unknown error occurred during merge",
+    };
+  }
+}
+
+/**
+ * ブランチを削除する
+ */
+export async function deleteBranch(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  branchName: string
+): Promise<DeleteBranchResult> {
+  try {
+    await octokit.rest.git.deleteRef({
+      owner,
+      repo,
+      ref: `heads/${branchName}`,
+    });
+
+    return {
+      success: true,
+      message: `Branch ${branchName} deleted successfully`,
+    };
+  } catch (error: any) {
+    // 404エラー: ブランチが既に存在しない（成功として扱う）
+    if (error.status === 404) {
+      return {
+        success: true,
+        message: `Branch ${branchName} already deleted`,
+      };
+    }
+
+    // その他のエラー
+    return {
+      success: false,
+      message: error.message || "Unknown error occurred during branch deletion",
     };
   }
 }

@@ -25,6 +25,7 @@ import {
   parseRepoUrl,
   isRepoOwner,
   mergePullRequest,
+  deleteBranch,
 } from "./utils/github.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -52,6 +53,10 @@ program
   .option(
     "-m, --auto-merge",
     "Automatically merge PR if no conflicts and you are the repo owner"
+  )
+  .option(
+    "-k, --keep-branch",
+    "Keep the branch after auto-merging (default: delete branch)"
   )
   .action(async (inputArgs: string[], options) => {
     try {
@@ -181,6 +186,28 @@ program
           if (result.success) {
             console.log(`✅ ${result.message}`);
             console.log("🎉 PR has been automatically merged!");
+
+            // ブランチ削除（--keep-branchが指定されていない場合）
+            if (!options.keepBranch) {
+              console.log("\n🗑️  Deleting branch...");
+              const deleteResult = await deleteBranch(
+                octokit,
+                owner,
+                repoName,
+                createdBranch
+              );
+
+              if (deleteResult.success) {
+                console.log(`✅ ${deleteResult.message}`);
+              } else {
+                console.log(
+                  `⚠️  Failed to delete branch: ${deleteResult.message}`
+                );
+                console.log("   (The PR was merged successfully)");
+              }
+            } else {
+              console.log("\n📌 Branch kept (--keep-branch flag was used)");
+            }
           } else {
             console.log(`⚠️  Auto-merge failed: ${result.message}`);
             console.log(`   Please merge manually: ${prUrl}`);
